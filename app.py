@@ -7,7 +7,7 @@ from flask import Flask
 from threading import Thread
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "ТВОЙ_НОВЫЙ_ТОКЕН")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8750662714:AAGWgxAMvajmhAiG8-3fTqiuRIOMW241QjM")
 bot = telebot.TeleBot(BOT_TOKEN)
 app = Flask(__name__)
 

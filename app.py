@@ -5,43 +5,52 @@ from flask import Flask
 from threading import Thread
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8750662714:AAGWgxAMvajmhAiG8-3fTqiuRIOMW241QjM")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "ТВОЙ_НОВЫЙ_ТОКЕН")
 bot = telebot.TeleBot(BOT_TOKEN)
 app = Flask(__name__)
 
 def get_rates():
-    """Получает курсы валют из Frankfurter API (данные ЕЦБ)"""
+    """Получает курсы валют с сайта Нацбанка РК"""
     try:
-        # Получаем курсы относительно евро
-        url = "https://api.frankfurter.app/latest?from=EUR"
+        url = "https://nationalbank.kz/rss/rates_all.xml"
         response = requests.get(url, timeout=10)
-        data = response.json()
         
-        if "rates" in data:
-            rates_eur = data["rates"]
+        if response.status_code == 200:
+            import xml.etree.ElementTree as ET
+            root = ET.fromstring(response.content)
             
-            # Курс евро к тенге
-            eur_to_kzt = rates_eur.get("KZT", 535.00)
+            rates = {}
+            for item in root.findall(".//item"):
+                title = item.find("title").text if item.find("title") is not None else ""
+                description = item.find("description").text if item.find("description") is not None else ""
+                
+                if "(" in title and ")" in title:
+                    code = title.split("(")[-1].split(")")[0]
+                    try:
+                        rate = float(description.replace(",", "."))
+                        rates[code] = rate
+                    except:
+                        pass
             
-            # Получаем курс доллара к евро
-            usd_to_eur = rates_eur.get("USD", 1.05)
+            rates["KZT"] = 1.0
             
-            return {
-                "USD": eur_to_kzt / usd_to_eur,     # USD в тенге
-                "EUR": eur_to_kzt,                  # EUR в тенге
-                "RUB": rates_eur.get("RUB", 0) * eur_to_kzt,
-                "CNY": rates_eur.get("CNY", 0) * eur_to_kzt,
-                "KZT": 1.0
-            }
+            if "USD" in rates and "EUR" in rates and "RUB" in rates and "CNY" in rates:
+                return {
+                    "USD": rates["USD"],
+                    "EUR": rates["EUR"],
+                    "RUB": rates["RUB"],
+                    "CNY": rates["CNY"],
+                    "KZT": 1.0
+                }
     except Exception as e:
         print(f"API error: {e}")
     
-    # Резервные курсы (если API недоступен)
+    # Резервные курсы (твои актуальные данные)
     return {
-        "USD": 495.50,
-        "EUR": 538.20,
-        "RUB": 5.95,
-        "CNY": 68.30,
+        "USD": 481.49,
+        "EUR": 556.33,
+        "RUB": 5.85,
+        "CNY": 69.92,
         "KZT": 1.0
     }
 
@@ -56,7 +65,7 @@ def create_keyboard():
 def start(message):
     text = """💱 *Курс валют к тенге* 💱
 
-Привет! Я показываю актуальные курсы валют от Европейского Центробанка.
+Привет! Я показываю актуальные курсы валют.
 
 *Доступные валюты:*
 🇰🇿 Тенге

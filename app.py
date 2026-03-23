@@ -10,25 +10,27 @@ bot = telebot.TeleBot(BOT_TOKEN)
 app = Flask(__name__)
 
 def get_rates():
-    """Получает реальные курсы валют и правильно конвертирует в тенге"""
+    """Получает курсы валют из Frankfurter API (данные ЕЦБ)"""
     try:
-        # Получаем курсы относительно доллара
-        url = "https://api.exchangerate-api.com/v4/latest/USD"
+        # Получаем курсы относительно евро
+        url = "https://api.frankfurter.app/latest?from=EUR"
         response = requests.get(url, timeout=10)
         data = response.json()
         
         if "rates" in data:
-            rates_usd = data["rates"]
+            rates_eur = data["rates"]
             
-            # Курс доллара к тенге
-            usd_to_kzt = rates_usd.get("KZT", 495.50)
+            # Курс евро к тенге
+            eur_to_kzt = rates_eur.get("KZT", 535.00)
             
-            # Конвертируем все валюты в тенге
+            # Получаем курс доллара к евро
+            usd_to_eur = rates_eur.get("USD", 1.05)
+            
             return {
-                "USD": usd_to_kzt,                     # 1 USD = X KZT
-                "EUR": rates_usd.get("EUR", 0) * usd_to_kzt,
-                "RUB": rates_usd.get("RUB", 0) * usd_to_kzt,
-                "CNY": rates_usd.get("CNY", 0) * usd_to_kzt,
+                "USD": eur_to_kzt / usd_to_eur,     # USD в тенге
+                "EUR": eur_to_kzt,                  # EUR в тенге
+                "RUB": rates_eur.get("RUB", 0) * eur_to_kzt,
+                "CNY": rates_eur.get("CNY", 0) * eur_to_kzt,
                 "KZT": 1.0
             }
     except Exception as e:
@@ -54,7 +56,7 @@ def create_keyboard():
 def start(message):
     text = """💱 *Курс валют к тенге* 💱
 
-Привет! Я показываю актуальные курсы валют.
+Привет! Я показываю актуальные курсы валют от Европейского Центробанка.
 
 *Доступные валюты:*
 🇰🇿 Тенге

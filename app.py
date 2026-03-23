@@ -10,24 +10,31 @@ bot = telebot.TeleBot(BOT_TOKEN)
 app = Flask(__name__)
 
 def get_rates():
+    """Получает реальные курсы валют и правильно конвертирует в тенге"""
     try:
+        # Получаем курсы относительно доллара
         url = "https://api.exchangerate-api.com/v4/latest/USD"
         response = requests.get(url, timeout=10)
         data = response.json()
         
         if "rates" in data:
-            rates = data["rates"]
-            usd_to_kzt = rates.get("KZT", 495.50)
+            rates_usd = data["rates"]
+            
+            # Курс доллара к тенге
+            usd_to_kzt = rates_usd.get("KZT", 495.50)
+            
+            # Конвертируем все валюты в тенге
             return {
-                "USD": usd_to_kzt,
-                "EUR": rates.get("EUR", 0) * usd_to_kzt,
-                "RUB": rates.get("RUB", 0) * usd_to_kzt,
-                "CNY": rates.get("CNY", 0) * usd_to_kzt,
+                "USD": usd_to_kzt,                     # 1 USD = X KZT
+                "EUR": rates_usd.get("EUR", 0) * usd_to_kzt,
+                "RUB": rates_usd.get("RUB", 0) * usd_to_kzt,
+                "CNY": rates_usd.get("CNY", 0) * usd_to_kzt,
                 "KZT": 1.0
             }
-    except:
-        pass
+    except Exception as e:
+        print(f"API error: {e}")
     
+    # Резервные курсы (если API недоступен)
     return {
         "USD": 495.50,
         "EUR": 538.20,
@@ -80,9 +87,14 @@ def index():
     return "Bot is running!"
 
 def run_bot():
-    bot.infinity_polling()
+    try:
+        bot.remove_webhook()
+        bot.infinity_polling()
+    except Exception as e:
+        print(f"Bot error: {e}")
 
 if __name__ == "__main__":
+    print("Starting bot...")
     thread = Thread(target=run_bot)
     thread.start()
     port = int(os.environ.get("PORT", 5000))

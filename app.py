@@ -1,6 +1,8 @@
 import telebot
 import os
 import requests
+import time
+import sys
 from flask import Flask
 from threading import Thread
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
@@ -45,7 +47,7 @@ def get_rates():
     except Exception as e:
         print(f"API error: {e}")
     
-    # Резервные курсы (твои актуальные данные)
+    # Резервные курсы
     return {
         "USD": 481.49,
         "EUR": 556.33,
@@ -99,7 +101,10 @@ def index():
 
 def run_bot():
     try:
+        print("Stopping old webhook...")
         bot.remove_webhook()
+        time.sleep(2)
+        print("Starting bot polling...")
         bot.infinity_polling()
     except Exception as e:
         print(f"Bot error: {e}")
@@ -107,6 +112,7 @@ def run_bot():
 if __name__ == "__main__":
     print("Starting bot...")
     thread = Thread(target=run_bot)
+    thread.daemon = True
     thread.start()
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
